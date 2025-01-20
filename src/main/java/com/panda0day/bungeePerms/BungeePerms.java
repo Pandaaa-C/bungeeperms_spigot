@@ -21,12 +21,15 @@ import java.util.concurrent.CompletableFuture;
 
 public final class BungeePerms extends JavaPlugin implements PluginMessageListener, Listener {
     private static final String CHANNEL = "bungee:permissions";
+    private static BungeePerms instance;
+
     private final Map<String, String> cachedPrefixes = new HashMap<>();
     private final Map<String, String> cachedSuffixes = new HashMap<>();
     private final Map<String, String> cachedPermissions = new HashMap<>();
 
     @Override
     public void onEnable() {
+        instance = this;
         getServer().getMessenger().registerOutgoingPluginChannel(this, CHANNEL);
         getServer().getMessenger().registerIncomingPluginChannel(this, CHANNEL, this);
         getServer().getPluginManager().registerEvents(new Events(), this);
@@ -82,6 +85,10 @@ public final class BungeePerms extends JavaPlugin implements PluginMessageListen
 
     public static String getChannel() {
         return CHANNEL;
+    }
+
+    public static BungeePerms getInstance() {
+        return instance;
     }
 
     public Map<String, String> getCachedSuffixes() {
