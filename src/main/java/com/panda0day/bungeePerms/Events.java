@@ -11,9 +11,8 @@ public class Events implements Listener {
     @EventHandler
     public void onChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        getLogger().info("onChat: " + player.getName());
-        String prefix = prefixes.getOrDefault(player.getName(), "");
-        String suffix = suffixes.getOrDefault(player.getName(), "");
+        String prefix = BungeePerms.getInstance().getCachedPrefixes().getOrDefault(player.getUniqueId().toString(), "");
+        String suffix = BungeePerms.getInstance().getCachedSuffixes().getOrDefault(player.getUniqueId().toString(), "");
 
         String formattedMessage = prefix + player.getName() +  " " + suffix + ": " + event.getMessage();
         event.setFormat(formattedMessage);
@@ -23,8 +22,8 @@ public class Events implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
 
-        String prefix = prefixes.getOrDefault(player.getName(), "");
-        String suffix = suffixes.getOrDefault(player.getName(), "");
+        String prefix = BungeePerms.getInstance().getCachedPrefixes().getOrDefault(player.getUniqueId().toString(), "");
+        String suffix = BungeePerms.getInstance().getCachedSuffixes().getOrDefault(player.getUniqueId().toString(), "");
 
         player.setPlayerListName(prefix + player.getName() + suffix);
     }
@@ -33,7 +32,7 @@ public class Events implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
 
-        prefixes.remove(player.getName());
-        suffixes.remove(player.getName());
+        BungeePerms.getInstance().getCachedPrefixes().remove(player.getName());
+        BungeePerms.getInstance().getCachedSuffixes().remove(player.getName());
     }
 }
