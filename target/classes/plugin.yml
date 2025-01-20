@@ -1,0 +1,5 @@
+name: BungeePerms
+version: '1.0-SNAPSHOT'
+main: com.panda0day.bungeePerms.BungeePerms
+api-version: '1.21'
+author: Panda0day
