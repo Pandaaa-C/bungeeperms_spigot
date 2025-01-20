@@ -8,25 +8,28 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class BungeePerms extends JavaPlugin implements PluginMessageListener, Listener {
     private static final String CHANNEL = "bungee:permissions";
-    private final Map<String, String> prefixes = new HashMap<>();
-    private final Map<String, String> suffixes = new HashMap<>();
+    private final Map<String, String> cachedPrefixes = new HashMap<>();
+    private final Map<String, String> cachedSuffixes = new HashMap<>();
+    private final Map<String, String> cachedPermissions = new HashMap<>();
 
     @Override
     public void onEnable() {
         getServer().getMessenger().registerOutgoingPluginChannel(this, CHANNEL);
         getServer().getMessenger().registerIncomingPluginChannel(this, CHANNEL, this);
-        getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new Events(), this);
     }
 
     @Override
@@ -40,86 +43,56 @@ public final class BungeePerms extends JavaPlugin implements PluginMessageListen
 
         String receivedMessage = new String(message, StandardCharsets.UTF_8);
         String[] data = receivedMessage.split(";");
+
+        handleReceivePrefixSuffix(data);
+        handleReceivePermissions(data);
+    }
+
+    private void handleReceivePrefixSuffix(String[] data) {
         String action = data[0];
         if (!action.equals("setSuffixPrefix")) return;
 
-        String playerName = data[1];
+        String playerUuid = data[1];
         String prefix = data[2];
         String suffix = data[3];
         if (suffix.equals("null")) {
             suffix = "";
         }
 
-        prefixes.put(playerName, prefix);
-        suffixes.put(playerName, suffix);
-
-        getLogger().info("Cached prefix and suffix for " + playerName + ": " + prefix + " | " + suffix);
+        cachedPrefixes.put(playerUuid, prefix);
+        cachedSuffixes.put(playerUuid, suffix);
     }
 
-    @EventHandler
-    public void onChat(AsyncPlayerChatEvent event) {
-        Player player = event.getPlayer();
-        getLogger().info("onChat: " + player.getName());
-        String prefix = prefixes.getOrDefault(player.getName(), "");
-        String suffix = suffixes.getOrDefault(player.getName(), "");
+    private void handleReceivePermissions(String[] data) {
+        String action = data[0];
+        if (!action.equals("setPermissions")) return;
 
-        String formattedMessage = prefix + player.getName() +  " " + suffix + ": " + event.getMessage();
-        event.setFormat(formattedMessage);
-    }
+        String playerUuid = data[1];
+        List<String> permissions = Arrays.asList(Arrays.copyOfRange(data, 2, data.length));
+        cachedPermissions.put(playerUuid, String.join(";", permissions));
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
+        Player player = Bukkit.getPlayer(playerUuid);
+        if (player == null) return;
 
-        String prefix = prefixes.getOrDefault(player.getName(), "");
-        String suffix = suffixes.getOrDefault(player.getName(), "");
-
-        player.setPlayerListName(prefix + player.getName() + suffix);
-    }
-
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-
-        prefixes.remove(player.getName());
-        suffixes.remove(player.getName());
-    }
-
-    public CompletableFuture<String> queryPrefix(Player player) {
-        CompletableFuture<String> future = new CompletableFuture<>();
-        String message = "getPrefix;" + player.getName();
-
-        player.sendPluginMessage(this, CHANNEL, message.getBytes());
-
-        Bukkit.getScheduler().runTaskLater(this, () -> {
-            String prefix = prefixes.getOrDefault(player.getName(), "");
-            future.complete(prefix);
-        }, 10L);
-        return future;
-    }
-
-    public CompletableFuture<String> querySuffix(Player player) {
-        CompletableFuture<String> future = new CompletableFuture<>();
-        String message = "getSuffix;" + player.getName();
-        player.sendPluginMessage(this, getChannel(), message.getBytes());
-
-        getServer().getScheduler().runTaskLater(this, () -> {
-            String suffix = suffixes.getOrDefault(player.getName(), "");
-            future.complete(suffix);
-        }, 10L);
-
-        return future;
-    };
-
-    public void updatePlayerPrefix(String playerName, String newPrefix) {
-        prefixes.put(playerName, newPrefix);
-    }
-
-    public void updatePlayerSuffix(String playerName, String newSuffix) {
-        suffixes.put(playerName, newSuffix);
+        PermissionAttachment attachment = player.addAttachment(this);
+        permissions.forEach(permission -> {
+            attachment.setPermission(permission, true);
+        });
     }
 
     public static String getChannel() {
         return CHANNEL;
+    }
+
+    public Map<String, String> getCachedSuffixes() {
+        return cachedSuffixes;
+    }
+
+    public Map<String, String> getCachedPrefixes() {
+        return cachedPrefixes;
+    }
+
+    public Map<String, String> getCachedPermissions() {
+        return cachedPermissions;
     }
 }
