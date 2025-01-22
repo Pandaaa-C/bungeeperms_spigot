@@ -1,6 +1,7 @@
 package com.panda0day.bungeePerms;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -13,11 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 
 public final class BungeePerms extends JavaPlugin implements PluginMessageListener, Listener {
     private static final String CHANNEL = "bungee:permissions";
@@ -62,8 +59,8 @@ public final class BungeePerms extends JavaPlugin implements PluginMessageListen
             suffix = "";
         }
 
-        cachedPrefixes.put(playerUuid, prefix);
-        cachedSuffixes.put(playerUuid, suffix);
+        cachedPrefixes.put(playerUuid, ChatColor.translateAlternateColorCodes('&', prefix));
+        cachedSuffixes.put(playerUuid, ChatColor.translateAlternateColorCodes('&', suffix));
     }
 
     private void handleReceivePermissions(String[] data) {
@@ -71,10 +68,14 @@ public final class BungeePerms extends JavaPlugin implements PluginMessageListen
         if (!action.equals("setPermissions")) return;
 
         String playerUuid = data[1];
-        List<String> permissions = Arrays.asList(Arrays.copyOfRange(data, 2, data.length));
+        List<String> permissions = new ArrayList<>();
+        for (int i = 2; i < data.length; i++) {
+            String permission = data[i];
+            permissions.add(permission);
+        }
         cachedPermissions.put(playerUuid, String.join(";", permissions));
 
-        Player player = Bukkit.getPlayer(playerUuid);
+        Player player = Bukkit.getPlayer(UUID.fromString(playerUuid));
         if (player == null) return;
 
         PermissionAttachment attachment = player.addAttachment(this);
