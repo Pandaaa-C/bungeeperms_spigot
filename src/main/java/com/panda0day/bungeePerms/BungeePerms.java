@@ -6,9 +6,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
@@ -86,6 +83,10 @@ public final class BungeePerms extends JavaPlugin implements PluginMessageListen
 
     public static String getChannel() {
         return CHANNEL;
+    }
+
+    public static String getPlayerGroup(Player player) {
+        return BungeePerms.getInstance().getCachedPrefixes().get(player.getUniqueId().toString());
     }
 
     public static BungeePerms getInstance() {
